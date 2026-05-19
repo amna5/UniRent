@@ -2,26 +2,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
+import '../config/app_secrets.dart';
 
-/// Stripe Payment Integration — Sandbox/Test Mode
-///
-/// SETUP (5 minutes, instant access):
-/// 1. Go to https://dashboard.stripe.com and create a free account
-/// 2. Make sure you're in TEST MODE (toggle in top left of dashboard)
-/// 3. Go to Developers → API Keys
-/// 4. Copy your "Publishable key" (starts with pk_test_...)
-/// 5. Copy your "Secret key" (starts with sk_test_...)
-/// 6. Paste both below
-///
-/// TEST CARD: 4242 4242 4242 4242  |  Any future date  |  Any 3-digit CVC
+// TEST CARD: 4242 4242 4242 4242  |  Any future date  |  Any 3-digit CVC
 
 class StripeService {
-  // ─── PASTE YOUR STRIPE TEST KEYS HERE ────────────────────────
-  static const String _publishableKey =
-      'pk_test_51TYpRXQ9u9JgiQIUvZOrRfLqqrXMjQkKgWkmxBYfNsyhAHbLfeLGDruhgLNsouBRNxHLEo97qZmmTjbRt65f8ZTY0033mrmwNo';
-  static const String _secretKey =
-      'sk_test_51TYpRXQ9u9JgiQIULZc0E1EpqOXSeSMd1DViN9cWCDHooSgneU3ycsJkAmMlNbt9RyLPUkPl8TEJ0Kl3oPim4AIl00IIe3idyq';
-  // ─────────────────────────────────────────────────────────────
+  static const String _publishableKey = AppSecrets.stripePublishableKey;
+  static const String _secretKey = AppSecrets.stripeSecretKey;
 
   /// Call this once in main.dart before runApp()
   static void init() {
@@ -92,9 +79,7 @@ class StripeService {
         returnURL: 'stripeunirent://stripe-redirect',
         style: ThemeMode.light,
         appearance: const PaymentSheetAppearance(
-          colors: PaymentSheetAppearanceColors(
-            primary: Color(0xFF5C2E0E),
-          ),
+          colors: PaymentSheetAppearanceColors(primary: Color(0xFF5C2E0E)),
           shapes: PaymentSheetShape(borderRadius: 12),
         ),
       ),
