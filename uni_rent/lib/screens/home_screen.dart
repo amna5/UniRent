@@ -1,7 +1,7 @@
 // home_screen.dart
 // Full home screen with item browsing, categories, and bottom nav
 
-import 'dart:io';
+//import 'dart:io';
 import 'package:flutter/material.dart';
 import '../db/database_helper.dart';
 import '../models/item_model.dart';
