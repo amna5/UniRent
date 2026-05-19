@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../models/item_model.dart';
 import '../theme.dart';
+import '../widgets/item_image.dart';
 import 'booking_screen.dart';
 
 class ItemDetailScreen extends StatelessWidget {
@@ -19,17 +20,18 @@ class ItemDetailScreen extends StatelessWidget {
             leading: IconButton(
               icon: const CircleAvatar(
                 backgroundColor: Colors.white,
-                child: Icon(Icons.arrow_back, color: AppTheme.primary, size: 20),
+                child: Icon(
+                  Icons.arrow_back,
+                  color: AppTheme.primary,
+                  size: 20,
+                ),
               ),
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                color: AppTheme.divider,
-                child: const Center(
-                  child: Icon(Icons.inventory_2_rounded,
-                      size: 80, color: AppTheme.textSecondary),
-                ),
+              background: ItemImage(
+                imagePath: item.imagePath,
+                placeholder: _imagePlaceholder(),
               ),
             ),
           ),
@@ -42,54 +44,79 @@ class ItemDetailScreen extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(item.title,
-                            style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.textPrimary)),
+                        child: Text(
+                          item.title,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: AppTheme.primary,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Text(item.category,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 12)),
+                        child: Text(
+                          item.category,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text('RM${item.pricePerDay.toStringAsFixed(2)}/day',
-                      style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.primary)),
+                  Text(
+                    'RM${item.pricePerDay.toStringAsFixed(2)}/day',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.primary,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(Icons.location_on,
-                          size: 16, color: AppTheme.textSecondary),
+                      const Icon(
+                        Icons.location_on,
+                        size: 16,
+                        color: AppTheme.textSecondary,
+                      ),
                       const SizedBox(width: 4),
-                      Text(item.location,
-                          style: const TextStyle(
-                              color: AppTheme.textSecondary, fontSize: 14)),
+                      Text(
+                        item.location,
+                        style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 14,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const Text('Description',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textPrimary)),
+                  const Text(
+                    'Description',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
                   const SizedBox(height: 6),
-                  Text(item.description,
-                      style: const TextStyle(
-                          fontSize: 14,
-                          color: AppTheme.textSecondary,
-                          height: 1.6)),
+                  Text(
+                    item.description,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.textSecondary,
+                      height: 1.6,
+                    ),
+                  ),
                   const SizedBox(height: 80),
                 ],
               ),
@@ -103,9 +130,10 @@ class ItemDetailScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ElevatedButton.icon(
-              onPressed: () => Navigator.push(context,
-                  MaterialPageRoute(
-                      builder: (_) => BookingScreen(item: item))),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => BookingScreen(item: item)),
+              ),
               icon: const Icon(Icons.calendar_month_rounded, size: 18),
               label: const Text('Book Now'),
             ),
@@ -125,4 +153,15 @@ class ItemDetailScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _imagePlaceholder() => Container(
+    color: AppTheme.cardBg,
+    child: const Center(
+      child: Icon(
+        Icons.inventory_2_rounded,
+        size: 80,
+        color: AppTheme.textSecondary,
+      ),
+    ),
+  );
 }

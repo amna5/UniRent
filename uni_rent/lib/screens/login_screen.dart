@@ -75,9 +75,9 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
       );
     } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
     }
   }
 
@@ -102,31 +102,41 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: AppTheme.primary,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Icon(Icons.home_rounded,
-                      color: Colors.white, size: 44),
+                  child: const Icon(
+                    Icons.home_rounded,
+                    color: Colors.white,
+                    size: 44,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
               const Center(
-                child: Text('UniRent',
-                    style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.primary)),
+                child: Text(
+                  'UniRent',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.primary,
+                  ),
+                ),
               ),
               const Center(
-                child: Text('Campus Peer-to-Peer Rental Platform',
-                    style:
-                        TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                child: Text(
+                  'Campus Peer-to-Peer Rental Platform',
+                  style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                ),
               ),
               const SizedBox(height: 48),
 
               // Email field
-              const Text('University Email',
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppTheme.textPrimary)),
+              const Text(
+                'University Email',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
               const SizedBox(height: 8),
               TextField(
                 controller: _emailController,
@@ -138,11 +148,14 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 16),
 
               // Password field
-              const Text('Password',
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppTheme.textPrimary)),
+              const Text(
+                'Password',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
               const SizedBox(height: 8),
               TextField(
                 controller: _passwordController,
@@ -168,9 +181,10 @@ class _LoginScreenState extends State<LoginScreen> {
               if (_errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 4, bottom: 4),
-                  child: Text(_errorMessage!,
-                      style:
-                          const TextStyle(color: AppTheme.error, fontSize: 13)),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: AppTheme.error, fontSize: 13),
+                  ),
                 ),
 
               const SizedBox(height: 24),
@@ -178,7 +192,8 @@ class _LoginScreenState extends State<LoginScreen> {
               // Login button
               _isLoading
                   ? const Center(
-                      child: CircularProgressIndicator(color: AppTheme.primary))
+                      child: CircularProgressIndicator(color: AppTheme.primary),
+                    )
                   : ElevatedButton(
                       onPressed: _login,
                       child: const Text('Login'),
@@ -190,14 +205,17 @@ class _LoginScreenState extends State<LoginScreen> {
               Center(
                 child: GestureDetector(
                   onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const RegisterScreen())),
-                  child: const Text('New user? Create an account',
-                      style: TextStyle(
-                          color: AppTheme.accent,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14)),
+                    context,
+                    MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                  ),
+                  child: const Text(
+                    'New user? Create an account',
+                    style: TextStyle(
+                      color: AppTheme.accent,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -208,26 +226,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Icon(Icons.verified, color: Colors.green, size: 18),
                   SizedBox(width: 6),
-                  Text('Verified Student Community',
-                      style: TextStyle(
-                          fontSize: 12, color: AppTheme.textSecondary)),
+                  Text(
+                    'Verified Student Community',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
                 ],
-              ),
-
-              // Admin hint
-              const SizedBox(height: 32),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.cardBg,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.divider),
-                ),
-                child: const Text(
-                  'Admin login: admin@unirent.my / admin123\nUser login: ahmad.faris@university.edu.my / password123',
-                  style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
-                  textAlign: TextAlign.center,
-                ),
               ),
             ],
           ),

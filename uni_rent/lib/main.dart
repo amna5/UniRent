@@ -50,15 +50,14 @@ class _SplashState extends State<_Splash> {
       return;
     }
     final role = await SessionService.getUserRole();
-    _go(role == 'admin'
-        ? const AdminDashboardScreen()
-        : const HomeScreen());
+    _go(role == 'admin' ? const AdminDashboardScreen() : const HomeScreen());
   }
 
   void _go(Widget screen) {
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => screen));
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => screen));
   }
 
   @override
@@ -71,14 +70,16 @@ class _SplashState extends State<_Splash> {
           children: [
             Icon(Icons.home_rounded, color: Colors.white, size: 64),
             SizedBox(height: 16),
-            Text('UniRent',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700)),
+            Text(
+              'UniRent',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             SizedBox(height: 8),
-            CircularProgressIndicator(
-                color: Colors.white60, strokeWidth: 2),
+            CircularProgressIndicator(color: Colors.white60, strokeWidth: 2),
           ],
         ),
       ),

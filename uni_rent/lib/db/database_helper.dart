@@ -19,7 +19,18 @@ class DatabaseHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    return await openDatabase(
+      path,
+      version: 2, // bump this number each time you change seed data
+      onCreate: _createDB,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        // Drop all tables and recreate — wipes old data and re-seeds fresh
+        await db.execute('DROP TABLE IF EXISTS bookings');
+        await db.execute('DROP TABLE IF EXISTS items');
+        await db.execute('DROP TABLE IF EXISTS users');
+        await _createDB(db, newVersion);
+      },
+    );
   }
 
   Future _createDB(Database db, int version) async {
@@ -98,9 +109,9 @@ class DatabaseHelper {
     // Seed sample user
     await db.insert('users', {
       'name': 'Ahmad Faris',
-      'email': 'ahmad.faris@university.edu.my',
+      'email': 'ahmad.faris@unikl.edu.my',
       'password': 'password123',
-      'university': 'Universiti Malaya',
+      'university': 'UniKL MIIT',
       'role': 'user',
       'rating': 4.8,
       'review_count': 24,
@@ -116,10 +127,11 @@ class DatabaseHelper {
         'owner_id': 2,
         'title': 'USB-C Fast Charger Adapter',
         'category': 'Electronics',
-        'description': 'Original 65W fast charging adapter. Compatible with most laptops and phones. Perfect for presentations or studying.',
+        'description':
+            'Original 65W fast charging adapter. Compatible with most laptops and phones. Perfect for presentations or studying.',
         'price_per_day': 3.0,
         'location': 'Campus A, Block 3',
-        'image_path': null,
+        'image_path': 'assets/charger.jpg',
         'is_available': 1,
         'created_at': DateTime.now().toIso8601String(),
       },
@@ -127,10 +139,11 @@ class DatabaseHelper {
         'owner_id': 2,
         'title': 'Wireless Headphones - Sony',
         'category': 'Electronics',
-        'description': 'Sony WH-1000XM4 noise cancelling headphones. Great for studying or presentations.',
+        'description':
+            'Sony WH-1000XM4 noise cancelling headphones. Great for studying or presentations.',
         'price_per_day': 5.0,
         'location': 'Campus B, Dormitory 5',
-        'image_path': null,
+        'image_path': 'assets/headphones.jpg',
         'is_available': 1,
         'created_at': DateTime.now().toIso8601String(),
       },
@@ -138,10 +151,11 @@ class DatabaseHelper {
         'owner_id': 2,
         'title': 'Formal Blazer - Navy Blue',
         'category': 'Clothing',
-        'description': 'Size M formal blazer, perfect for presentations or job interviews.',
+        'description':
+            'Size M formal blazer, perfect for presentations or job interviews.',
         'price_per_day': 10.0,
         'location': 'Campus A, Block 7',
-        'image_path': null,
+        'image_path': 'assets/blazer.jpg',
         'is_available': 1,
         'created_at': DateTime.now().toIso8601String(),
       },
@@ -149,10 +163,11 @@ class DatabaseHelper {
         'owner_id': 2,
         'title': 'Scientific Calculator - TI-84',
         'category': 'Tools',
-        'description': 'Texas Instruments TI-84 Plus graphing calculator. Perfect for exams.',
+        'description':
+            'Texas Instruments TI-84 Plus graphing calculator. Perfect for exams.',
         'price_per_day': 4.0,
         'location': 'Campus C, Block 2',
-        'image_path': null,
+        'image_path': 'assets/calculator.jpg',
         'is_available': 1,
         'created_at': DateTime.now().toIso8601String(),
       },
@@ -171,8 +186,11 @@ class DatabaseHelper {
 
   Future<UserModel?> getUserByEmail(String email) async {
     final db = await database;
-    final maps = await db.query('users',
-        where: 'email = ?', whereArgs: [email]);
+    final maps = await db.query(
+      'users',
+      where: 'email = ?',
+      whereArgs: [email],
+    );
     if (maps.isEmpty) return null;
     return UserModel.fromMap(maps.first);
   }
@@ -192,8 +210,12 @@ class DatabaseHelper {
 
   Future<int> updateUser(UserModel user) async {
     final db = await database;
-    return await db.update('users', user.toMap(),
-        where: 'id = ?', whereArgs: [user.id]);
+    return await db.update(
+      'users',
+      user.toMap(),
+      where: 'id = ?',
+      whereArgs: [user.id],
+    );
   }
 
   Future<int> deleteUser(int id) async {
@@ -217,22 +239,29 @@ class DatabaseHelper {
     final db = await database;
     List<Map<String, dynamic>> maps;
     if (category != null && category != 'All') {
-      maps = await db.query('items',
-          where: 'is_available = 1 AND category = ?',
-          whereArgs: [category],
-          orderBy: 'created_at DESC');
+      maps = await db.query(
+        'items',
+        where: 'is_available = 1 AND category = ?',
+        whereArgs: [category],
+        orderBy: 'created_at DESC',
+      );
     } else {
-      maps = await db.query('items',
-          where: 'is_available = 1',
-          orderBy: 'created_at DESC');
+      maps = await db.query(
+        'items',
+        where: 'is_available = 1',
+        orderBy: 'created_at DESC',
+      );
     }
     return maps.map((m) => ItemModel.fromMap(m)).toList();
   }
 
   Future<List<ItemModel>> getItemsByOwner(int ownerId) async {
     final db = await database;
-    final maps = await db.query('items',
-        where: 'owner_id = ?', whereArgs: [ownerId]);
+    final maps = await db.query(
+      'items',
+      where: 'owner_id = ?',
+      whereArgs: [ownerId],
+    );
     return maps.map((m) => ItemModel.fromMap(m)).toList();
   }
 
@@ -245,8 +274,12 @@ class DatabaseHelper {
 
   Future<int> updateItem(ItemModel item) async {
     final db = await database;
-    return await db.update('items', item.toMap(),
-        where: 'id = ?', whereArgs: [item.id]);
+    return await db.update(
+      'items',
+      item.toMap(),
+      where: 'id = ?',
+      whereArgs: [item.id],
+    );
   }
 
   Future<int> deleteItem(int id) async {
@@ -268,28 +301,40 @@ class DatabaseHelper {
 
   Future<List<BookingModel>> getBookingsByRenter(int renterId) async {
     final db = await database;
-    final maps = await db.query('bookings',
-        where: 'renter_id = ?',
-        whereArgs: [renterId],
-        orderBy: 'created_at DESC');
+    final maps = await db.query(
+      'bookings',
+      where: 'renter_id = ?',
+      whereArgs: [renterId],
+      orderBy: 'created_at DESC',
+    );
     return maps.map((m) => BookingModel.fromMap(m)).toList();
   }
 
   Future<List<BookingModel>> getBookingsByItem(int itemId) async {
     final db = await database;
-    final maps = await db.query('bookings',
-        where: 'item_id = ?', whereArgs: [itemId]);
+    final maps = await db.query(
+      'bookings',
+      where: 'item_id = ?',
+      whereArgs: [itemId],
+    );
     return maps.map((m) => BookingModel.fromMap(m)).toList();
   }
 
   Future<int> updateBooking(BookingModel booking) async {
     final db = await database;
-    return await db.update('bookings', booking.toMap(),
-        where: 'id = ?', whereArgs: [booking.id]);
+    return await db.update(
+      'bookings',
+      booking.toMap(),
+      where: 'id = ?',
+      whereArgs: [booking.id],
+    );
   }
 
   Future<int> updateBookingPaymentStatus(
-      int bookingId, String status, String? billCode) async {
+    int bookingId,
+    String status,
+    String? billCode,
+  ) async {
     final db = await database;
     return await db.update(
       'bookings',

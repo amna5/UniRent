@@ -1,14 +1,18 @@
 // home_screen.dart
 // Full home screen with item browsing, categories, and bottom nav
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../db/database_helper.dart';
 import '../models/item_model.dart';
+import '../services/session_service.dart';
 import '../theme.dart';
+import '../widgets/item_image.dart';
 import 'item_detail_screen.dart';
 import 'add_item_screen.dart';
 import 'my_rentals_screen.dart';
 import 'profile_screen.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -29,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
     'Clothing',
     'Tools',
     'Books',
-    'Other'
+    'Other',
   ];
 
   @override
@@ -40,8 +44,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadItems() async {
     setState(() => _loading = true);
-    final items = await DatabaseHelper.instance
-        .getAvailableItems(category: _selectedCategory);
+    final items = await DatabaseHelper.instance.getAvailableItems(
+      category: _selectedCategory,
+    );
     setState(() {
       _items = items;
       _loading = false;
@@ -76,25 +81,30 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (i) => setState(() => _currentIndex = i),
         items: const [
           BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home_rounded),
-              label: 'Home'),
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.inventory_2_outlined),
-              activeIcon: Icon(Icons.inventory_2_rounded),
-              label: 'Rentals'),
+            icon: Icon(Icons.inventory_2_outlined),
+            activeIcon: Icon(Icons.inventory_2_rounded),
+            label: 'Rentals',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.add_circle_outline),
-              activeIcon: Icon(Icons.add_circle_rounded),
-              label: 'Add'),
+            icon: Icon(Icons.add_circle_outline),
+            activeIcon: Icon(Icons.add_circle_rounded),
+            label: 'Add',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.chat_bubble_outline),
-              activeIcon: Icon(Icons.chat_bubble_rounded),
-              label: 'Messages'),
+            icon: Icon(Icons.chat_bubble_outline),
+            activeIcon: Icon(Icons.chat_bubble_rounded),
+            label: 'Messages',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person_rounded),
-              label: 'Profile'),
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person_rounded),
+            label: 'Profile',
+          ),
         ],
       ),
     );
@@ -129,13 +139,18 @@ class _HomeTab extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('UniRent',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700)),
-                const Text('Find what you need, nearby',
-                    style: TextStyle(color: Colors.white70, fontSize: 13)),
+                const Text(
+                  'UniRent',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const Text(
+                  'Find what you need, nearby',
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                ),
                 const SizedBox(height: 12),
                 TextField(
                   decoration: InputDecoration(
@@ -169,22 +184,25 @@ class _HomeTab extends StatelessWidget {
                 return GestureDetector(
                   onTap: () => onCategoryTap(cat),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: selected ? AppTheme.primary : Colors.white,
                       border: Border.all(
-                          color:
-                              selected ? AppTheme.primary : AppTheme.divider),
+                        color: selected ? AppTheme.primary : AppTheme.divider,
+                      ),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(cat,
-                        style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: selected
-                                ? Colors.white
-                                : AppTheme.textPrimary)),
+                    child: Text(
+                      cat,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: selected ? Colors.white : AppTheme.textPrimary,
+                      ),
+                    ),
                   ),
                 );
               },
@@ -195,21 +213,22 @@ class _HomeTab extends StatelessWidget {
           Expanded(
             child: loading
                 ? const Center(
-                    child: CircularProgressIndicator(color: AppTheme.primary))
+                    child: CircularProgressIndicator(color: AppTheme.primary),
+                  )
                 : items.isEmpty
-                    ? const Center(child: Text('No items available'))
-                    : GridView.builder(
-                        padding: const EdgeInsets.all(12),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
+                ? const Center(child: Text('No items available'))
+                : GridView.builder(
+                    padding: const EdgeInsets.all(12),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           childAspectRatio: 0.75,
                           crossAxisSpacing: 10,
                           mainAxisSpacing: 10,
                         ),
-                        itemCount: items.length,
-                        itemBuilder: (_, i) => _ItemCard(item: items[i]),
-                      ),
+                    itemCount: items.length,
+                    itemBuilder: (_, i) => _ItemCard(item: items[i]),
+                  ),
           ),
         ],
       ),
@@ -224,8 +243,10 @@ class _ItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.push(context,
-          MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item))),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)),
+      ),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -235,17 +256,13 @@ class _ItemCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image placeholder
+            // Image — asset, file, or placeholder
             Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: AppTheme.divider,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
                 ),
-                child: const Center(
-                  child: Icon(Icons.inventory_2_rounded,
-                      size: 40, color: AppTheme.textSecondary),
-                ),
+                child: ItemImage(imagePath: item.imagePath),
               ),
             ),
             Padding(
@@ -253,47 +270,66 @@ class _ItemCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: AppTheme.textPrimary)),
+                  Text(
+                    item.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on,
-                          size: 12, color: AppTheme.textSecondary),
+                      const Icon(
+                        Icons.location_on,
+                        size: 12,
+                        color: AppTheme.textSecondary,
+                      ),
                       const SizedBox(width: 2),
                       Expanded(
-                        child: Text(item.location,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontSize: 11, color: AppTheme.textSecondary)),
+                        child: Text(
+                          item.location,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Text('RM${item.pricePerDay.toStringAsFixed(0)}/day',
-                          style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.primary)),
+                      Text(
+                        'RM${item.pricePerDay.toStringAsFixed(0)}/day',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.primary,
+                        ),
+                      ),
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: AppTheme.cardBg,
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(color: AppTheme.divider),
                         ),
-                        child: Text(item.category,
-                            style: const TextStyle(
-                                fontSize: 10, color: AppTheme.textSecondary)),
+                        child: Text(
+                          item.category,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -305,4 +341,15 @@ class _ItemCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _placeholder() => Container(
+    color: AppTheme.cardBg,
+    child: const Center(
+      child: Icon(
+        Icons.inventory_2_rounded,
+        size: 40,
+        color: AppTheme.textSecondary,
+      ),
+    ),
+  );
 }
