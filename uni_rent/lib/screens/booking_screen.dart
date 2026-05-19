@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../db/database_helper.dart';
 import '../../../models/item_model.dart';
 import '../../../models/booking_model.dart';
-import '../../../services/toyyibpay_service.dart';
+import '../../../services/stripe_service.dart';
 import '../../../services/session_service.dart';
 import '../../../theme.dart';
 
@@ -20,7 +20,7 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
-  String _selectedPayment = 'Touch \'n Go eWallet';
+  String _selectedPayment = 'Credit / Debit Card';
   bool _isProcessing = false;
 
   // ─── Calculation constants ────────────────────────────────────
@@ -39,16 +39,10 @@ class _BookingScreenState extends State<BookingScreen> {
 
   final _payments = [
     {
-      'name': 'Debit/Credit Card',
-      'sub': 'Visa, Mastercard',
+      'name': 'Credit / Debit Card',
+      'sub': 'Visa, Mastercard, Amex — powered by Stripe',
       'icon': Icons.credit_card,
     },
-    {
-      'name': 'Touch \'n Go eWallet',
-      'sub': 'TNG Digital',
-      'icon': Icons.account_balance_wallet,
-    },
-    {'name': 'DuitNow QR', 'sub': 'Scan to pay', 'icon': Icons.qr_code_2},
   ];
 
   Future<void> _pickDate({required bool isStart}) async {
@@ -120,8 +114,6 @@ class _BookingScreenState extends State<BookingScreen> {
     setState(() => _isProcessing = true);
 
     final userId = await SessionService.getUserId();
-    final userName = await SessionService.getUserName();
-    final userEmail = await SessionService.getUserEmail();
 
     if (userId == null) {
       setState(() => _isProcessing = false);
@@ -146,53 +138,77 @@ class _BookingScreenState extends State<BookingScreen> {
 
     final bookingId = await DatabaseHelper.instance.insertBooking(booking);
 
-    // Call ToyyibPay API to create a bill
-    final result = await ToyyibPayService.createBill(
-      bookingId: bookingId,
+    // Step 1 — Create PaymentIntent with Stripe
+    final stripeResult = await StripeService.createPaymentIntent(
       amount: _total,
-      description:
-          'UniRent: ${widget.item.title} (${_days}d × ${_currencyFormat.format(widget.item.pricePerDay)}/day)',
-      payerName: userName ?? 'Student',
-      payerEmail: userEmail ?? 'student@university.edu.my',
     );
 
-    if (result.success && result.billCode != null) {
-      // Save bill code to booking
-      await DatabaseHelper.instance.updateBookingPaymentStatus(
-        bookingId,
-        'pending',
-        result.billCode,
-      );
-
-      setState(() => _isProcessing = false);
-
-      // Open ToyyibPay payment page
-      final uri = Uri.parse(result.paymentUrl!);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-
-      // Show success dialog after returning
-      if (!mounted) return;
-      _showBookingConfirmed(bookingId);
-    } else {
-      // ToyyibPay failed — still save booking but mark for manual payment
+    if (!stripeResult.success || stripeResult.clientSecret == null) {
       await DatabaseHelper.instance.updateBookingPaymentStatus(
         bookingId,
         'pending',
         null,
       );
-
       setState(() => _isProcessing = false);
-
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Payment gateway error: ${result.errorMessage ?? "Please try again"}',
-          ),
+          content: Text('Payment error: ${stripeResult.errorMessage}'),
           backgroundColor: AppTheme.error,
-          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
+    // Save PaymentIntent ID to booking
+    await DatabaseHelper.instance.updateBookingPaymentStatus(
+      bookingId,
+      'pending',
+      stripeResult.paymentIntentId,
+    );
+
+    setState(() => _isProcessing = false);
+
+    // Step 2 — Show Stripe payment sheet
+    try {
+      final paid = await StripeService.presentPaymentSheet(
+        clientSecret: stripeResult.clientSecret!,
+        merchantName: 'UniRent',
+      );
+
+      if (paid == true) {
+        // Step 3 — Mark booking as paid in SQLite
+        await DatabaseHelper.instance.updateBookingPaymentStatus(
+          bookingId,
+          'paid',
+          stripeResult.paymentIntentId,
+        );
+        if (!mounted) return;
+        _showBookingConfirmed(bookingId);
+      }
+    } on StripeException catch (e) {
+      if (!mounted) return;
+      if (e.error.code == FailureCode.Canceled) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment cancelled. Booking saved as pending.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Payment failed: ${e.error.localizedMessage}'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Payment error: $e'),
+          backgroundColor: AppTheme.error,
         ),
       );
     }
@@ -231,7 +247,7 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Booking #$bookingId has been created.\nComplete payment on the ToyyibPay page.',
+              'Booking #$bookingId has been created and payment confirmed.',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 13,

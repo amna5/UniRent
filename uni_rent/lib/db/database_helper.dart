@@ -3,6 +3,8 @@ import 'package:path/path.dart';
 import '../models/user_model.dart';
 import '../models/item_model.dart';
 import '../models/booking_model.dart';
+import '../models/conversation_model.dart';
+import '../models/message_model.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -21,10 +23,11 @@ class DatabaseHelper {
     final path = join(dbPath, filePath);
     return await openDatabase(
       path,
-      version: 2, // bump this number each time you change seed data
+      version: 4,
       onCreate: _createDB,
       onUpgrade: (db, oldVersion, newVersion) async {
-        // Drop all tables and recreate — wipes old data and re-seeds fresh
+        await db.execute('DROP TABLE IF EXISTS messages');
+        await db.execute('DROP TABLE IF EXISTS conversations');
         await db.execute('DROP TABLE IF EXISTS bookings');
         await db.execute('DROP TABLE IF EXISTS items');
         await db.execute('DROP TABLE IF EXISTS users');
@@ -83,7 +86,7 @@ class DatabaseHelper {
         total_amount REAL NOT NULL,
         payment_method TEXT NOT NULL,
         payment_status TEXT DEFAULT 'pending',
-        toyyibpay_bill_code TEXT,
+        stripe_payment_intent_id TEXT,
         booking_status TEXT DEFAULT 'active',
         created_at TEXT NOT NULL,
         FOREIGN KEY (item_id) REFERENCES items(id),
@@ -176,6 +179,36 @@ class DatabaseHelper {
     for (final item in items) {
       await db.insert('items', item);
     }
+
+    // Conversations table
+    await db.execute('''
+      CREATE TABLE conversations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        item_id INTEGER NOT NULL,
+        owner_id INTEGER NOT NULL,
+        renter_id INTEGER NOT NULL,
+        last_message TEXT,
+        last_message_at TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (item_id) REFERENCES items(id),
+        FOREIGN KEY (owner_id) REFERENCES users(id),
+        FOREIGN KEY (renter_id) REFERENCES users(id)
+      )
+    ''');
+
+    // Messages table
+    await db.execute('''
+      CREATE TABLE messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        conversation_id INTEGER NOT NULL,
+        sender_id INTEGER NOT NULL,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        is_read INTEGER DEFAULT 0,
+        FOREIGN KEY (conversation_id) REFERENCES conversations(id),
+        FOREIGN KEY (sender_id) REFERENCES users(id)
+      )
+    ''');
   }
 
   // ─── USER CRUD ────────────────────────────────────────────────
@@ -338,7 +371,7 @@ class DatabaseHelper {
     final db = await database;
     return await db.update(
       'bookings',
-      {'payment_status': status, 'toyyibpay_bill_code': billCode},
+      {'payment_status': status, 'stripe_payment_intent_id': billCode},
       where: 'id = ?',
       whereArgs: [bookingId],
     );
@@ -347,5 +380,111 @@ class DatabaseHelper {
   Future<int> deleteBooking(int id) async {
     final db = await database;
     return await db.delete('bookings', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ─── PROFILE STATS ────────────────────────────────────────────
+  Future<int> getItemCountByOwner(int ownerId) async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) AS c FROM items WHERE owner_id = ?', [ownerId]);
+    return (result.first['c'] as int?) ?? 0;
+  }
+
+  Future<int> getRentalCountByRenter(int renterId) async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) AS c FROM bookings WHERE renter_id = ? AND payment_status = "paid"',
+      [renterId]);
+    return (result.first['c'] as int?) ?? 0;
+  }
+
+  /// Returns response rate as a display string, e.g. "75%" or "—" if no conversations.
+  Future<String> getResponseRate(int userId) async {
+    final db = await database;
+    final totalResult = await db.rawQuery(
+      'SELECT COUNT(*) AS c FROM conversations WHERE owner_id = ?', [userId]);
+    final total = (totalResult.first['c'] as int?) ?? 0;
+    if (total == 0) return '—';
+
+    final repliedResult = await db.rawQuery('''
+      SELECT COUNT(DISTINCT c.id) AS c
+      FROM conversations c
+      INNER JOIN messages m ON m.conversation_id = c.id AND m.sender_id = c.owner_id
+      WHERE c.owner_id = ?
+    ''', [userId]);
+    final replied = (repliedResult.first['c'] as int?) ?? 0;
+    return '${(replied / total * 100).round()}%';
+  }
+
+  // ─── CONVERSATIONS ────────────────────────────────────────────
+  Future<ConversationModel> getOrCreateConversation({
+    required int itemId,
+    required int ownerId,
+    required int renterId,
+  }) async {
+    final db = await database;
+    final maps = await db.query(
+      'conversations',
+      where: 'item_id = ? AND owner_id = ? AND renter_id = ?',
+      whereArgs: [itemId, ownerId, renterId],
+    );
+    if (maps.isNotEmpty) return ConversationModel.fromMap(maps.first);
+
+    final id = await db.insert('conversations', {
+      'item_id': itemId,
+      'owner_id': ownerId,
+      'renter_id': renterId,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+    return ConversationModel(
+      id: id,
+      itemId: itemId,
+      ownerId: ownerId,
+      renterId: renterId,
+      createdAt: DateTime.now().toIso8601String(),
+    );
+  }
+
+  Future<List<ConversationModel>> getConversationsForUser(int userId) async {
+    final db = await database;
+    final maps = await db.rawQuery('''
+      SELECT c.*,
+             i.title AS item_title,
+             CASE WHEN c.owner_id = ? THEN r.name ELSE o.name END AS other_user_name
+      FROM conversations c
+      JOIN items i ON i.id = c.item_id
+      JOIN users o ON o.id = c.owner_id
+      JOIN users r ON r.id = c.renter_id
+      WHERE c.owner_id = ? OR c.renter_id = ?
+      ORDER BY COALESCE(c.last_message_at, c.created_at) DESC
+    ''', [userId, userId, userId]);
+    return maps.map((m) => ConversationModel.fromMap(m)).toList();
+  }
+
+  // ─── MESSAGES ─────────────────────────────────────────────────
+  Future<int> insertMessage(MessageModel message) async {
+    final db = await database;
+    final id = await db.insert('messages', message.toMap());
+    await db.update(
+      'conversations',
+      {
+        'last_message': message.content,
+        'last_message_at': message.createdAt,
+      },
+      where: 'id = ?',
+      whereArgs: [message.conversationId],
+    );
+    return id;
+  }
+
+  Future<List<MessageModel>> getMessages(int conversationId) async {
+    final db = await database;
+    final maps = await db.query(
+      'messages',
+      where: 'conversation_id = ?',
+      whereArgs: [conversationId],
+      orderBy: 'created_at ASC',
+    );
+    return maps.map((m) => MessageModel.fromMap(m)).toList();
   }
 }

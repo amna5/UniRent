@@ -6,9 +6,11 @@ import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
 
+import 'services/stripe_service.dart'; // add this import at top
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Initialise DB on first launch (creates tables + seeds admin + sample data)
+  StripeService.init(); // ← ADD THIS LINE
   await DatabaseHelper.instance.database;
   runApp(const UniRentApp());
 }

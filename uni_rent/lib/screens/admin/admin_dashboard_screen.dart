@@ -88,11 +88,101 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     }
   }
 
+  // ── Edit user ────────────────────────────────────────────────
+  Future<void> _editUser(UserModel user) async {
+    final nameCtrl = TextEditingController(text: user.name);
+    final uniCtrl = TextEditingController(text: user.university);
+    String selectedRole = user.role;
+    int isActive = user.isActive;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text('Edit: ${user.name}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Full Name'),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: uniCtrl,
+                decoration: const InputDecoration(labelText: 'University'),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                initialValue: selectedRole,
+                decoration: const InputDecoration(labelText: 'Role'),
+                items: ['user', 'admin']
+                    .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                    .toList(),
+                onChanged: (v) =>
+                    setDialogState(() => selectedRole = v ?? selectedRole),
+              ),
+              const SizedBox(height: 4),
+              SwitchListTile(
+                title: const Text('Account Active',
+                    style: TextStyle(fontSize: 14)),
+                value: isActive == 1,
+                activeThumbColor: AppTheme.primary,
+                onChanged: (v) =>
+                    setDialogState(() => isActive = v ? 1 : 0),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (saved == true) {
+      final name = nameCtrl.text.trim();
+      final uni = uniCtrl.text.trim();
+      if (name.isEmpty || uni.isEmpty) return;
+      final updated = UserModel(
+        id: user.id,
+        name: name,
+        email: user.email,
+        password: user.password,
+        university: uni,
+        role: selectedRole,
+        rating: user.rating,
+        reviewCount: user.reviewCount,
+        itemsListed: user.itemsListed,
+        rentalCount: user.rentalCount,
+        memberSince: user.memberSince,
+        isActive: isActive,
+      );
+      await DatabaseHelper.instance.updateUser(updated);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$name updated')),
+      );
+      _loadData();
+    }
+  }
+
   // ── Delete user ─────────────────────────────────────────────
   Future<void> _deleteUser(UserModel user) async {
     final confirm = await _confirmDelete('user', user.name);
     if (confirm) {
       await DatabaseHelper.instance.deleteUser(user.id!);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('User "${user.name}" removed'),
         backgroundColor: AppTheme.error,
@@ -106,6 +196,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     final confirm = await _confirmDelete('booking', '#${booking.id}');
     if (confirm) {
       await DatabaseHelper.instance.deleteBooking(booking.id!);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Booking deleted'),
         backgroundColor: AppTheme.error,
@@ -147,7 +238,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       totalAmount: booking.totalAmount,
       paymentMethod: booking.paymentMethod,
       paymentStatus: newStatus == 'paid' ? 'paid' : booking.paymentStatus,
-      toyyibpayBillCode: booking.toyyibpayBillCode,
+      stripePaymentIntentId: booking.stripePaymentIntentId,
       bookingStatus: newStatus,
       createdAt: booking.createdAt,
     );
@@ -237,6 +328,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 _UsersTab(
                   users: _users,
                   onDelete: _deleteUser,
+                  onEdit: _editUser,
                 ),
               ],
             ),
@@ -266,7 +358,7 @@ class _BookingsTab extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: bookings.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, index) => const SizedBox(height: 10),
       itemBuilder: (_, i) {
         final b = bookings[i];
         final statusColor = _statusColor(b.bookingStatus);
@@ -389,7 +481,7 @@ class _ItemsTab extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: items.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, index) => const SizedBox(height: 10),
       itemBuilder: (_, i) {
         final item = items[i];
         return Container(
@@ -471,8 +563,13 @@ class _ItemsTab extends StatelessWidget {
 class _UsersTab extends StatelessWidget {
   final List<UserModel> users;
   final Function(UserModel) onDelete;
+  final Function(UserModel) onEdit;
 
-  const _UsersTab({required this.users, required this.onDelete});
+  const _UsersTab({
+    required this.users,
+    required this.onDelete,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -482,7 +579,7 @@ class _UsersTab extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: users.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, index) => const SizedBox(height: 10),
       itemBuilder: (_, i) {
         final user = users[i];
         return Container(
@@ -526,6 +623,11 @@ class _UsersTab extends StatelessWidget {
                 ),
               ),
               IconButton(
+                icon: const Icon(Icons.edit_rounded, color: AppTheme.primary),
+                onPressed: () => onEdit(user),
+                tooltip: 'Edit user',
+              ),
+              IconButton(
                 icon: const Icon(Icons.delete_rounded, color: AppTheme.error),
                 onPressed: () => onDelete(user),
                 tooltip: 'Remove user',
@@ -549,9 +651,9 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Text(label,
             style: TextStyle(

@@ -10,7 +10,7 @@ class BookingModel {
   final double totalAmount;
   final String paymentMethod;
   final String paymentStatus; // 'pending', 'paid', 'failed'
-  final String? toyyibpayBillCode;
+  final String? stripePaymentIntentId;
   final String bookingStatus; // 'active', 'completed', 'cancelled'
   final String createdAt;
 
@@ -26,7 +26,7 @@ class BookingModel {
     required this.totalAmount,
     required this.paymentMethod,
     this.paymentStatus = 'pending',
-    this.toyyibpayBillCode,
+    this.stripePaymentIntentId,
     this.bookingStatus = 'active',
     required this.createdAt,
   });
@@ -43,7 +43,7 @@ class BookingModel {
         'total_amount': totalAmount,
         'payment_method': paymentMethod,
         'payment_status': paymentStatus,
-        'toyyibpay_bill_code': toyyibpayBillCode,
+        'stripe_payment_intent_id': stripePaymentIntentId,
         'booking_status': bookingStatus,
         'created_at': createdAt,
       };
@@ -60,7 +60,7 @@ class BookingModel {
         totalAmount: (map['total_amount'] as num).toDouble(),
         paymentMethod: map['payment_method'],
         paymentStatus: map['payment_status'] ?? 'pending',
-        toyyibpayBillCode: map['toyyibpay_bill_code'],
+        stripePaymentIntentId: map['stripe_payment_intent_id'],
         bookingStatus: map['booking_status'] ?? 'active',
         createdAt: map['created_at'],
       );

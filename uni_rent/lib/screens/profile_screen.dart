@@ -5,6 +5,7 @@ import '../models/user_model.dart';
 import '../services/session_service.dart';
 import '../theme.dart';
 import 'login_screen.dart';
+import 'my_listings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -14,6 +15,9 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   UserModel? _user;
+  int _itemsListed = 0;
+  int _rentalCount = 0;
+  String _responseRate = '—';
 
   @override
   void initState() {
@@ -24,8 +28,87 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _load() async {
     final id = await SessionService.getUserId();
     if (id == null) return;
-    final user = await DatabaseHelper.instance.getUserById(id);
-    setState(() => _user = user);
+    final results = await Future.wait([
+      DatabaseHelper.instance.getUserById(id),
+      DatabaseHelper.instance.getItemCountByOwner(id),
+      DatabaseHelper.instance.getRentalCountByRenter(id),
+      DatabaseHelper.instance.getResponseRate(id),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _user = results[0] as UserModel?;
+      _itemsListed = results[1] as int;
+      _rentalCount = results[2] as int;
+      _responseRate = results[3] as String;
+    });
+  }
+
+  Future<void> _editProfile() async {
+    if (_user == null) return;
+    final nameCtrl = TextEditingController(text: _user!.name);
+    final uniCtrl = TextEditingController(text: _user!.university);
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Edit Profile'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: 'Full Name'),
+              textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: uniCtrl,
+              decoration: const InputDecoration(labelText: 'University'),
+              textCapitalization: TextCapitalization.words,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (saved == true) {
+      final name = nameCtrl.text.trim();
+      final uni = uniCtrl.text.trim();
+      if (name.isEmpty || uni.isEmpty) return;
+      final updated = UserModel(
+        id: _user!.id,
+        name: name,
+        email: _user!.email,
+        password: _user!.password,
+        university: uni,
+        role: _user!.role,
+        rating: _user!.rating,
+        reviewCount: _user!.reviewCount,
+        itemsListed: _user!.itemsListed,
+        rentalCount: _user!.rentalCount,
+        memberSince: _user!.memberSince,
+        isActive: _user!.isActive,
+      );
+      await DatabaseHelper.instance.updateUser(updated);
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 
   Future<void> _logout() async {
@@ -114,11 +197,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Row(
                   children: [
-                    _stat('${_user!.itemsListed}', 'Items Listed'),
+                    _stat('$_itemsListed', 'Items Listed'),
                     _divider(),
-                    _stat('${_user!.rentalCount}', 'Rentals'),
+                    _stat('$_rentalCount', 'Rentals'),
                     _divider(),
-                    _stat('98%', 'Response Rate'),
+                    _stat(_responseRate, 'Response Rate'),
                   ],
                 ),
               ),
@@ -168,8 +251,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               // Settings
               _section('Settings', [
-                _settingsTile(Icons.list_alt_rounded, 'My Listings', onTap: () {}),
-                _settingsTile(Icons.edit_outlined, 'Edit Profile', onTap: () {}),
+                _settingsTile(Icons.list_alt_rounded, 'My Listings', onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const MyListingsScreen()));
+                }),
+                _settingsTile(Icons.edit_outlined, 'Edit Profile', onTap: _editProfile),
                 _settingsTile(Icons.payment_outlined, 'Payment Methods', onTap: () {}),
                 _settingsTile(Icons.notifications_outlined, 'Notification Settings',
                     onTap: () {}),

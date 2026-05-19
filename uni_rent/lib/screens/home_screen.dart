@@ -11,6 +11,7 @@ import '../widgets/item_image.dart';
 import 'item_detail_screen.dart';
 import 'add_item_screen.dart';
 import 'my_rentals_screen.dart';
+import 'chat_list_screen.dart';
 import 'profile_screen.dart';
 import 'login_screen.dart';
 
@@ -23,7 +24,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  int _profileKey = 0;
   String _selectedCategory = 'All';
+  String _searchQuery = '';
   List<ItemModel> _items = [];
   bool _loading = true;
 
@@ -58,27 +61,44 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadItems();
   }
 
+  List<ItemModel> get _filteredItems {
+    if (_searchQuery.isEmpty) return _items;
+    final q = _searchQuery.toLowerCase();
+    return _items.where((item) {
+      return item.title.toLowerCase().contains(q) ||
+          item.category.toLowerCase().contains(q) ||
+          item.location.toLowerCase().contains(q);
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final screens = [
       _HomeTab(
-        items: _items,
+        items: _filteredItems,
         loading: _loading,
         categories: _categories,
         selectedCategory: _selectedCategory,
         onCategoryTap: _onCategoryTap,
+        onSearchChanged: (q) => setState(() => _searchQuery = q),
       ),
       const MyRentalsScreen(),
       const AddItemScreen(),
-      const Center(child: Text('Messages coming soon')),
-      const ProfileScreen(),
+      const ChatListScreen(),
+      ProfileScreen(key: ValueKey(_profileKey)),
     ];
 
     return Scaffold(
       body: screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
+        onTap: (i) {
+          setState(() {
+            _currentIndex = i;
+            if (i == 0) _loadItems();
+            if (i == 4) _profileKey++;
+          });
+        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -117,6 +137,7 @@ class _HomeTab extends StatelessWidget {
   final List<String> categories;
   final String selectedCategory;
   final Function(String) onCategoryTap;
+  final Function(String) onSearchChanged;
 
   const _HomeTab({
     required this.items,
@@ -124,6 +145,7 @@ class _HomeTab extends StatelessWidget {
     required this.categories,
     required this.selectedCategory,
     required this.onCategoryTap,
+    required this.onSearchChanged,
   });
 
   @override
@@ -153,6 +175,7 @@ class _HomeTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 TextField(
+                  onChanged: onSearchChanged,
                   decoration: InputDecoration(
                     hintText: 'Search items...',
                     hintStyle: const TextStyle(color: Colors.grey),
