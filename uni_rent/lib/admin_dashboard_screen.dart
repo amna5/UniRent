@@ -359,6 +359,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 ),
                 _UsersTab(
                   users: _users,
+                  items: _items,
+                  bookings: _bookings,
                   onDelete: _deleteUser,
                   onEdit: _editUser,
                 ),
@@ -580,8 +582,8 @@ class _ItemsTab extends StatelessWidget {
                       onPressed: () => onToggleAvailability(item),
                       icon: Icon(
                         item.available
-                            ? Icons.visibility_off_rounded
-                            : Icons.visibility_rounded,
+                            ? Icons.visibility_rounded
+                            : Icons.visibility_off_rounded,
                         size: 16,
                       ),
                       label: Text(
@@ -620,11 +622,15 @@ class _ItemsTab extends StatelessWidget {
 // ─── Users Tab ───────────────────────────────────────────────────────────────
 class _UsersTab extends StatelessWidget {
   final List<UserModel> users;
+  final List<ItemModel> items;
+  final List<BookingModel> bookings;
   final Function(UserModel) onDelete;
   final Function(UserModel) onEdit;
 
   const _UsersTab({
     required this.users,
+    required this.items,
+    required this.bookings,
     required this.onDelete,
     required this.onEdit,
   });
@@ -688,7 +694,7 @@ class _UsersTab extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${user.itemsListed} listings · ${user.rentalCount} rentals',
+                      '${items.where((i) => i.ownerId == user.id).length} listings · ${bookings.where((b) => b.renterId == user.id && b.paymentStatus == 'paid').length} rentals',
                       style: const TextStyle(
                         fontSize: 11,
                         color: AppTheme.textHint,
