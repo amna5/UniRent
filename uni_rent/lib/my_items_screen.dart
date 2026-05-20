@@ -311,7 +311,7 @@ class _MyItemsScreenState extends State<MyItemsScreen>
                 children: [
                   IconButton(
                     icon: Icon(
-                      item.available ? Icons.visibility_off : Icons.visibility,
+                      item.available ? Icons.visibility : Icons.visibility_off,
                       size: 20,
                     ),
                     onPressed: () => _toggleAvailability(item),
