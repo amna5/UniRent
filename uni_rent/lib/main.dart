@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
-import 'db/database_helper.dart';
-import 'services/session_service.dart';
+import 'database_helper.dart';
 import 'theme.dart';
-import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/admin/admin_dashboard_screen.dart';
-
-import 'services/stripe_service.dart'; // add this import at top
+import 'login_screen.dart';
+import 'home_screen.dart';
+import 'admin_dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  StripeService.init(); // ← ADD THIS LINE
   await DatabaseHelper.instance.database;
   runApp(const UniRentApp());
 }

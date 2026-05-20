@@ -1,10 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import '../models/user_model.dart';
-import '../models/item_model.dart';
-import '../models/booking_model.dart';
-import '../models/conversation_model.dart';
-import '../models/message_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'models.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -23,7 +20,7 @@ class DatabaseHelper {
     final path = join(dbPath, filePath);
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _createDB,
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS messages');
@@ -86,7 +83,7 @@ class DatabaseHelper {
         total_amount REAL NOT NULL,
         payment_method TEXT NOT NULL,
         payment_status TEXT DEFAULT 'pending',
-        stripe_payment_intent_id TEXT,
+        transaction_id TEXT,
         booking_status TEXT DEFAULT 'active',
         created_at TEXT NOT NULL,
         FOREIGN KEY (item_id) REFERENCES items(id),
@@ -366,12 +363,12 @@ class DatabaseHelper {
   Future<int> updateBookingPaymentStatus(
     int bookingId,
     String status,
-    String? billCode,
+    String? transactionId,
   ) async {
     final db = await database;
     return await db.update(
       'bookings',
-      {'payment_status': status, 'stripe_payment_intent_id': billCode},
+      {'payment_status': status, 'transaction_id': transactionId},
       where: 'id = ?',
       whereArgs: [bookingId],
     );
@@ -486,5 +483,55 @@ class DatabaseHelper {
       orderBy: 'created_at ASC',
     );
     return maps.map((m) => MessageModel.fromMap(m)).toList();
+  }
+}
+
+class SessionService {
+  static const _keyUserId = 'user_id';
+  static const _keyUserRole = 'user_role';
+  static const _keyUserName = 'user_name';
+  static const _keyUserEmail = 'user_email';
+
+  static Future<void> saveSession({
+    required int userId,
+    required String role,
+    required String name,
+    required String email,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyUserId, userId);
+    await prefs.setString(_keyUserRole, role);
+    await prefs.setString(_keyUserName, name);
+    await prefs.setString(_keyUserEmail, email);
+  }
+
+  static Future<int?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_keyUserId);
+  }
+
+  static Future<String?> getUserRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyUserRole);
+  }
+
+  static Future<String?> getUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyUserName);
+  }
+
+  static Future<String?> getUserEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyUserEmail);
+  }
+
+  static Future<bool> isLoggedIn() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.containsKey(_keyUserId);
+  }
+
+  static Future<void> clearSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
   }
 }

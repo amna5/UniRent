@@ -1,13 +1,11 @@
-// add_item_screen.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-import '../db/database_helper.dart';
-import '../models/item_model.dart';
-import '../services/session_service.dart';
-import '../theme.dart';
+import 'database_helper.dart';
+import 'models.dart';
+import 'theme.dart';
 
 class AddItemScreen extends StatefulWidget {
   const AddItemScreen({super.key});
@@ -301,7 +299,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
             _label('Category *'),
             DropdownButtonFormField<String>(
-              value: _category,
+              initialValue: _category,
               decoration: const InputDecoration(),
               items: _categories
                   .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -342,7 +340,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                     children: [
                       _label('Period *'),
                       DropdownButtonFormField<String>(
-                        value: _period,
+                        initialValue: _period,
                         decoration: const InputDecoration(),
                         items: ['Per Day', 'Per Week']
                             .map(

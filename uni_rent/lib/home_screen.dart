@@ -1,19 +1,12 @@
-// home_screen.dart
-// Full home screen with item browsing, categories, and bottom nav
-
-//import 'dart:io';
 import 'package:flutter/material.dart';
-import '../db/database_helper.dart';
-import '../models/item_model.dart';
-import '../services/session_service.dart';
-import '../theme.dart';
-import '../widgets/item_image.dart';
+import 'database_helper.dart';
+import 'models.dart';
+import 'theme.dart';
 import 'item_detail_screen.dart';
 import 'add_item_screen.dart';
-import 'my_rentals_screen.dart';
-import 'chat_list_screen.dart';
+import 'my_items_screen.dart';
+import 'chat_screens.dart';
 import 'profile_screen.dart';
-import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -82,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onCategoryTap: _onCategoryTap,
         onSearchChanged: (q) => setState(() => _searchQuery = q),
       ),
-      const MyRentalsScreen(),
+      const MyItemsScreen(),
       const AddItemScreen(),
       const ChatListScreen(),
       ProfileScreen(key: ValueKey(_profileKey)),
@@ -200,7 +193,7 @@ class _HomeTab extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               itemCount: categories.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (ctx, index) => const SizedBox(width: 8),
               itemBuilder: (_, i) {
                 final cat = categories[i];
                 final selected = selectedCategory == cat;
@@ -364,15 +357,4 @@ class _ItemCard extends StatelessWidget {
       ),
     );
   }
-
-  Widget _placeholder() => Container(
-    color: AppTheme.cardBg,
-    child: const Center(
-      child: Icon(
-        Icons.inventory_2_rounded,
-        size: 40,
-        color: AppTheme.textSecondary,
-      ),
-    ),
-  );
 }
