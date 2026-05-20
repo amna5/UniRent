@@ -24,21 +24,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _load() async {
-    final id = await SessionService.getUserId();
-    if (id == null) return;
-    final results = await Future.wait([
-      DatabaseHelper.instance.getUserById(id),
-      DatabaseHelper.instance.getItemCountByOwner(id),
-      DatabaseHelper.instance.getRentalCountByRenter(id),
-      DatabaseHelper.instance.getResponseRate(id),
-    ]);
-    if (!mounted) return;
-    setState(() {
-      _user = results[0] as UserModel?;
-      _itemsListed = results[1] as int;
-      _rentalCount = results[2] as int;
-      _responseRate = results[3] as String;
-    });
+    try {
+      final id = await SessionService.getUserId();
+      if (id == null) {
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            (_) => false,
+          );
+        }
+        return;
+      }
+      final results = await Future.wait([
+        DatabaseHelper.instance.getUserById(id),
+        DatabaseHelper.instance.getItemCountByOwner(id),
+        DatabaseHelper.instance.getRentalCountByRenter(id),
+        DatabaseHelper.instance.getResponseRate(id),
+      ]);
+      final user = results[0] as UserModel?;
+      if (user == null) {
+        await SessionService.clearSession();
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            (_) => false,
+          );
+        }
+        return;
+      }
+      if (!mounted) return;
+      setState(() {
+        _user = user;
+        _itemsListed = results[1] as int;
+        _rentalCount = results[2] as int;
+        _responseRate = results[3] as String;
+      });
+    } catch (e, stack) {
+      debugPrint("Error loading profile: $e");
+      debugPrint(stack.toString());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load profile data: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _editProfile() async {

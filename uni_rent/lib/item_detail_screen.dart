@@ -191,7 +191,7 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
-  String _selectedPayment = 'Dummy Credit Card';
+  String _selectedPayment = 'Credit / Debit Card';
   bool _isProcessing = false;
 
   int get _days {
@@ -295,6 +295,84 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
+  Widget _buildPaymentOption({
+    required String value,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
+    final isSelected = _selectedPayment == value;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedPayment = value),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppTheme.primary : const Color(0xFFE8E0D8),
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? AppTheme.primary : const Color(0xFFAAAAAA),
+                  width: 2,
+                ),
+              ),
+              padding: const EdgeInsets.all(3),
+              child: isSelected
+                  ? Container(
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppTheme.primary,
+                      ),
+                    )
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd/MM/yyyy');
@@ -307,101 +385,303 @@ class _BookingScreenState extends State<BookingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Card(
-              child: ListTile(
-                title: Text(
-                  widget.item.title,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  'RM${widget.item.pricePerDay.toStringAsFixed(2)}/day • ${widget.item.location}',
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Rental Dates',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            ListTile(
-              title: Text(
-                _startDate == null
-                    ? 'Select Start Date'
-                    : 'Starts: ${dateFormat.format(_startDate!)}',
-              ),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () => _pickDate(isStart: true),
-            ),
-            ListTile(
-              title: Text(
-                _endDate == null
-                    ? 'Select End Date'
-                    : 'Ends: ${dateFormat.format(_endDate!)}',
-              ),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () => _pickDate(isStart: false),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Payment Method',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            RadioListTile<String>(
-              title: const Text('Dummy Credit Card'),
-              subtitle: const Text('Simulated card checkout (no real charge)'),
-              value: 'Dummy Credit Card',
-              groupValue: _selectedPayment,
-              onChanged: (v) => setState(() => _selectedPayment = v!),
-            ),
-            RadioListTile<String>(
-              title: const Text('Cash on Delivery'),
-              subtitle: const Text('Pay the owner directly upon pickup'),
-              value: 'Cash on Delivery',
-              groupValue: _selectedPayment,
-              onChanged: (v) => setState(() => _selectedPayment = v!),
-            ),
-            const SizedBox(height: 16),
-            if (_days > 0) ...[
-              Card(
+            Container(
+              decoration: BoxDecoration(
                 color: AppTheme.cardBg,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFBECE2)),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE5DCD5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: ItemImage(imagePath: widget.item.imagePath),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.item.title,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.item.location,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'RM${widget.item.pricePerDay.toStringAsFixed(2)}/day',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                const Icon(
+                  Icons.calendar_month,
+                  color: AppTheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Rental Period',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Rental fee ($_days days)'),
-                          Text(currency.format(_rentalFee)),
-                        ],
+                      const Text(
+                        'Start Date',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textSecondary,
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Service fee (3%)'),
-                          Text(currency.format(_serviceFee)),
-                        ],
-                      ),
-                      const Divider(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Total',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                      const SizedBox(height: 6),
+                      GestureDetector(
+                        onTap: () => _pickDate(isStart: true),
+                        child: Container(
+                          height: 48,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFE0D5CC)),
                           ),
-                          Text(
-                            currency.format(_total),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _startDate == null
+                                    ? 'dd/mm/yyyy'
+                                    : dateFormat.format(_startDate!),
+                                style: TextStyle(
+                                  color: _startDate == null
+                                      ? AppTheme.textHint
+                                      : AppTheme.textPrimary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const Icon(
+                                Icons.calendar_today_outlined,
+                                size: 18,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'End Date',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      GestureDetector(
+                        onTap: () => _pickDate(isStart: false),
+                        child: Container(
+                          height: 48,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFE0D5CC)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _endDate == null
+                                    ? 'dd/mm/yyyy'
+                                    : dateFormat.format(_endDate!),
+                                style: TextStyle(
+                                  color: _endDate == null
+                                      ? AppTheme.textHint
+                                      : AppTheme.textPrimary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const Icon(
+                                Icons.calendar_today_outlined,
+                                size: 18,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Payment Method',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
               ),
-            ],
+            ),
+            const SizedBox(height: 8),
+            _buildPaymentOption(
+              value: 'Credit / Debit Card',
+              title: 'Credit / Debit Card',
+              subtitle: 'Visa, Mastercard, Amex',
+              icon: Icons.credit_card_outlined,
+            ),
+            _buildPaymentOption(
+              value: 'TnG eWallet',
+              title: 'TnG eWallet',
+              subtitle: "Pay via Touch 'n Go eWallet",
+              icon: Icons.account_balance_wallet_outlined,
+            ),
+            _buildPaymentOption(
+              value: 'DuitNow QR',
+              title: 'DuitNow QR',
+              subtitle: 'Scan DuitNow QR code',
+              icon: Icons.qr_code_scanner_outlined,
+            ),
+            const SizedBox(height: 20),
+            Container(
+              decoration: BoxDecoration(
+                color: AppTheme.cardBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFBECE2)),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Payment Summary',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Rental Fee',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                      Text(
+                        currency.format(_rentalFee),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Service Fee (3%)',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                      Text(
+                        currency.format(_serviceFee),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(
+                    color: Color(0xFFE8DCD0),
+                    height: 1,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Total',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        currency.format(_total),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.accent,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 24),
             _isProcessing
                 ? const Center(
@@ -409,8 +689,36 @@ class _BookingScreenState extends State<BookingScreen> {
                   )
                 : ElevatedButton(
                     onPressed: _days > 0 ? _confirmAndPay : null,
-                    child: Text(
-                      _days > 0 ? 'Confirm & Book' : 'Select dates to continue',
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _days > 0
+                          ? AppTheme.primary
+                          : const Color(0xFFAFAFAF),
+                      disabledBackgroundColor: const Color(0xFFAFAFAF),
+                      disabledForegroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.lock,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _days > 0
+                              ? 'Confirm & Book'
+                              : 'Select dates to continue',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
           ],

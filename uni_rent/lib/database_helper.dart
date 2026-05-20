@@ -384,7 +384,7 @@ class DatabaseHelper {
     final db = await database;
     final result = await db.rawQuery(
       'SELECT COUNT(*) AS c FROM items WHERE owner_id = ?', [ownerId]);
-    return (result.first['c'] as int?) ?? 0;
+    return (result.first['c'] as num?)?.toInt() ?? 0;
   }
 
   Future<int> getRentalCountByRenter(int renterId) async {
@@ -392,7 +392,7 @@ class DatabaseHelper {
     final result = await db.rawQuery(
       'SELECT COUNT(*) AS c FROM bookings WHERE renter_id = ? AND payment_status = "paid"',
       [renterId]);
-    return (result.first['c'] as int?) ?? 0;
+    return (result.first['c'] as num?)?.toInt() ?? 0;
   }
 
   /// Returns response rate as a display string, e.g. "75%" or "—" if no conversations.
@@ -400,7 +400,7 @@ class DatabaseHelper {
     final db = await database;
     final totalResult = await db.rawQuery(
       'SELECT COUNT(*) AS c FROM conversations WHERE owner_id = ?', [userId]);
-    final total = (totalResult.first['c'] as int?) ?? 0;
+    final total = (totalResult.first['c'] as num?)?.toInt() ?? 0;
     if (total == 0) return '—';
 
     final repliedResult = await db.rawQuery('''
@@ -409,7 +409,7 @@ class DatabaseHelper {
       INNER JOIN messages m ON m.conversation_id = c.id AND m.sender_id = c.owner_id
       WHERE c.owner_id = ?
     ''', [userId]);
-    final replied = (repliedResult.first['c'] as int?) ?? 0;
+    final replied = (repliedResult.first['c'] as num?)?.toInt() ?? 0;
     return '${(replied / total * 100).round()}%';
   }
 
