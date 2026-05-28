@@ -1,19 +1,14 @@
-// home_screen.dart
-// Full home screen with item browsing, categories, and bottom nav
-
-//import 'dart:io';
 import 'package:flutter/material.dart';
-import '../db/database_helper.dart';
-import '../models/item_model.dart';
-import '../services/session_service.dart';
-import '../theme.dart';
-import '../widgets/item_image.dart';
+import 'database_helper.dart';
+import 'models.dart';
+import 'theme.dart';
 import 'item_detail_screen.dart';
 import 'add_item_screen.dart';
-import 'my_rentals_screen.dart';
-import 'chat_list_screen.dart';
+import 'my_items_screen.dart';
+import 'chat_screens.dart';
 import 'profile_screen.dart';
-import 'login_screen.dart';
+import 'app_logo.dart';
+import 'notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,7 +19,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-  int _profileKey = 0;
+  int _profileKey = 0; // bumping this forces profile to re-fetch on tab switch
   String _selectedCategory = 'All';
   String _searchQuery = '';
   List<ItemModel> _items = [];
@@ -43,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadItems();
+    NotificationService.requestPermission();
   }
 
   Future<void> _loadItems() async {
@@ -61,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadItems();
   }
 
+  // filter by title, category or location
   List<ItemModel> get _filteredItems {
     if (_searchQuery.isEmpty) return _items;
     final q = _searchQuery.toLowerCase();
@@ -82,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onCategoryTap: _onCategoryTap,
         onSearchChanged: (q) => setState(() => _searchQuery = q),
       ),
-      const MyRentalsScreen(),
+      const MyItemsScreen(),
       const AddItemScreen(),
       const ChatListScreen(),
       ProfileScreen(key: ValueKey(_profileKey)),
@@ -95,8 +92,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (i) {
           setState(() {
             _currentIndex = i;
-            if (i == 0) _loadItems();
-            if (i == 4) _profileKey++;
+            if (i == 0) _loadItems(); // refresh in case a new item was added
+            if (i == 4) _profileKey++; // force profile rebuild
           });
         },
         items: const [
@@ -154,21 +151,14 @@ class _HomeTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Container(
             color: AppTheme.primary,
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'UniRent',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                const UniRentAppBarTitle(),
+                const SizedBox(height: 2),
                 const Text(
                   'Find what you need, nearby',
                   style: TextStyle(color: Colors.white70, fontSize: 13),
@@ -193,14 +183,13 @@ class _HomeTab extends StatelessWidget {
             ),
           ),
 
-          // Categories
           SizedBox(
             height: 44,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               itemCount: categories.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (ctx, index) => const SizedBox(width: 8),
               itemBuilder: (_, i) {
                 final cat = categories[i];
                 final selected = selectedCategory == cat;
@@ -232,7 +221,6 @@ class _HomeTab extends StatelessWidget {
             ),
           ),
 
-          // Item grid
           Expanded(
             child: loading
                 ? const Center(
@@ -279,7 +267,6 @@ class _ItemCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image — asset, file, or placeholder
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(
@@ -364,15 +351,4 @@ class _ItemCard extends StatelessWidget {
       ),
     );
   }
-
-  Widget _placeholder() => Container(
-    color: AppTheme.cardBg,
-    child: const Center(
-      child: Icon(
-        Icons.inventory_2_rounded,
-        size: 40,
-        color: AppTheme.textSecondary,
-      ),
-    ),
-  );
 }

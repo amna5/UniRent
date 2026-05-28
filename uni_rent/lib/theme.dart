@@ -1,7 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Brand colours from UniRent prototype
   static const Color primary = Color(0xFF5C2E0E);      // dark brown
   static const Color primaryLight = Color(0xFF8B4513);
   static const Color accent = Color(0xFFE07B39);        // orange accent
@@ -21,7 +21,6 @@ class AppTheme {
           primary: primary,
           secondary: accent,
           surface: surface,
-          background: background,
         ),
         useMaterial3: true,
         scaffoldBackgroundColor: background,
@@ -84,4 +83,50 @@ class AppTheme {
           elevation: 8,
         ),
       );
+}
+
+class ItemImage extends StatelessWidget {
+  final String? imagePath;
+  final BoxFit fit;
+  final Widget? placeholder;
+
+  const ItemImage({
+    super.key,
+    required this.imagePath,
+    this.fit = BoxFit.cover,
+    this.placeholder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = placeholder ??
+        Container(
+          color: AppTheme.cardBg,
+          child: const Center(
+            child: Icon(
+              Icons.inventory_2_rounded,
+              size: 40,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        );
+
+    if (imagePath == null || imagePath!.isEmpty) return fallback;
+
+    if (imagePath!.startsWith('assets/')) {
+      return Image.asset(
+        imagePath!,
+        fit: fit,
+        width: double.infinity,
+        errorBuilder: (ctx, error, stackTrace) => fallback,
+      );
+    }
+
+    return Image.file(
+      File(imagePath!),
+      fit: fit,
+      width: double.infinity,
+      errorBuilder: (ctx, error, stackTrace) => fallback,
+    );
+  }
 }

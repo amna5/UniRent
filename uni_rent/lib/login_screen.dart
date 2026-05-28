@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import '../db/database_helper.dart';
-import '../services/session_service.dart';
-import '../theme.dart';
+import 'database_helper.dart';
+import 'models.dart';
+import 'theme.dart';
 import 'home_screen.dart';
-import 'admin/admin_dashboard_screen.dart';
-import 'register_screen.dart';
+import 'admin_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -59,7 +58,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Save session
     await SessionService.saveSession(
       userId: user.id!,
       role: user.role,
@@ -69,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
-    // Route based on role
+    // send admin to dashboard, regular user to home
     if (user.isAdmin) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
@@ -93,7 +91,6 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const SizedBox(height: 40),
 
-              // Logo
               Center(
                 child: Container(
                   width: 80,
@@ -128,7 +125,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 48),
 
-              // Email field
               const Text(
                 'University Email',
                 style: TextStyle(
@@ -147,7 +143,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Password field
               const Text(
                 'Password',
                 style: TextStyle(
@@ -177,7 +172,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 8),
 
-              // Error message
               if (_errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 4, bottom: 4),
@@ -189,7 +183,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 24),
 
-              // Login button
               _isLoading
                   ? const Center(
                       child: CircularProgressIndicator(color: AppTheme.primary),
@@ -201,7 +194,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 20),
 
-              // Register link
               Center(
                 child: GestureDetector(
                   onTap: () => Navigator.push(
@@ -220,7 +212,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Verified badge
               const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -237,6 +228,87 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _name = TextEditingController();
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  final _university = TextEditingController();
+  bool _loading = false;
+  String? _error;
+
+  Future<void> _register() async {
+    if (_name.text.isEmpty || _email.text.isEmpty ||
+        _password.text.isEmpty || _university.text.isEmpty) {
+      setState(() => _error = 'Please fill in all fields.');
+      return;
+    }
+    setState(() { _loading = true; _error = null; });
+    try {
+      await DatabaseHelper.instance.insertUser(UserModel(
+        name: _name.text.trim(),
+        email: _email.text.trim(),
+        password: _password.text,
+        university: _university.text.trim(),
+        memberSince: DateTime.now().toIso8601String(),
+      ));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Account created! Please login.'),
+            backgroundColor: Colors.green));
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    } catch (e) {
+      setState(() { _loading = false; _error = 'Email already registered.'; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Create Account')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            TextField(controller: _name,
+                decoration: const InputDecoration(labelText: 'Full Name')),
+            const SizedBox(height: 14),
+            TextField(controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                    labelText: 'University Email',
+                    hintText: 'student@university.edu.my')),
+            const SizedBox(height: 14),
+            TextField(controller: _university,
+                decoration: const InputDecoration(labelText: 'University')),
+            const SizedBox(height: 14),
+            TextField(controller: _password, obscureText: true,
+                decoration: const InputDecoration(labelText: 'Password')),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(_error!, style: const TextStyle(color: AppTheme.error, fontSize: 13)),
+            ],
+            const SizedBox(height: 24),
+            _loading
+                ? const CircularProgressIndicator(color: AppTheme.primary)
+                : ElevatedButton(onPressed: _register,
+                    child: const Text('Create Account')),
+          ],
         ),
       ),
     );

@@ -1,10 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import '../models/user_model.dart';
-import '../models/item_model.dart';
-import '../models/booking_model.dart';
-import '../models/conversation_model.dart';
-import '../models/message_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'models.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -23,7 +20,7 @@ class DatabaseHelper {
     final path = join(dbPath, filePath);
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _createDB,
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS messages');
@@ -37,7 +34,6 @@ class DatabaseHelper {
   }
 
   Future _createDB(Database db, int version) async {
-    // Users table — role: 'user' or 'admin'
     await db.execute('''
       CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,8 +42,6 @@ class DatabaseHelper {
         password TEXT NOT NULL,
         university TEXT NOT NULL,
         role TEXT NOT NULL DEFAULT 'user',
-        rating REAL DEFAULT 0.0,
-        review_count INTEGER DEFAULT 0,
         items_listed INTEGER DEFAULT 0,
         rental_count INTEGER DEFAULT 0,
         member_since TEXT NOT NULL,
@@ -55,7 +49,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Items table
     await db.execute('''
       CREATE TABLE items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,7 +65,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Bookings table
     await db.execute('''
       CREATE TABLE bookings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,7 +78,7 @@ class DatabaseHelper {
         total_amount REAL NOT NULL,
         payment_method TEXT NOT NULL,
         payment_status TEXT DEFAULT 'pending',
-        stripe_payment_intent_id TEXT,
+        transaction_id TEXT,
         booking_status TEXT DEFAULT 'active',
         created_at TEXT NOT NULL,
         FOREIGN KEY (item_id) REFERENCES items(id),
@@ -94,37 +86,30 @@ class DatabaseHelper {
       )
     ''');
 
-    // Seed admin account
     await db.insert('users', {
       'name': 'Admin UniRent',
       'email': 'admin@unirent.my',
       'password': 'admin123',
       'university': 'UniRent HQ',
       'role': 'admin',
-      'rating': 5.0,
-      'review_count': 0,
       'items_listed': 0,
       'rental_count': 0,
       'member_since': DateTime.now().toIso8601String(),
       'is_active': 1,
     });
 
-    // Seed sample user
     await db.insert('users', {
       'name': 'Ahmad Faris',
       'email': 'ahmad.faris@unikl.edu.my',
       'password': 'password123',
       'university': 'UniKL MIIT',
       'role': 'user',
-      'rating': 4.8,
-      'review_count': 24,
       'items_listed': 12,
       'rental_count': 24,
       'member_since': DateTime(2025, 1, 1).toIso8601String(),
       'is_active': 1,
     });
 
-    // Seed sample items
     final items = [
       {
         'owner_id': 2,
@@ -180,7 +165,6 @@ class DatabaseHelper {
       await db.insert('items', item);
     }
 
-    // Conversations table
     await db.execute('''
       CREATE TABLE conversations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -196,7 +180,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Messages table
     await db.execute('''
       CREATE TABLE messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -211,7 +194,6 @@ class DatabaseHelper {
     ''');
   }
 
-  // ─── USER CRUD ────────────────────────────────────────────────
   Future<int> insertUser(UserModel user) async {
     final db = await database;
     return await db.insert('users', user.toMap());
@@ -256,7 +238,6 @@ class DatabaseHelper {
     return await db.delete('users', where: 'id = ?', whereArgs: [id]);
   }
 
-  // ─── ITEM CRUD ────────────────────────────────────────────────
   Future<int> insertItem(ItemModel item) async {
     final db = await database;
     return await db.insert('items', item.toMap());
@@ -320,7 +301,6 @@ class DatabaseHelper {
     return await db.delete('items', where: 'id = ?', whereArgs: [id]);
   }
 
-  // ─── BOOKING CRUD ─────────────────────────────────────────────
   Future<int> insertBooking(BookingModel booking) async {
     final db = await database;
     return await db.insert('bookings', booking.toMap());
@@ -366,12 +346,12 @@ class DatabaseHelper {
   Future<int> updateBookingPaymentStatus(
     int bookingId,
     String status,
-    String? billCode,
+    String? transactionId,
   ) async {
     final db = await database;
     return await db.update(
       'bookings',
-      {'payment_status': status, 'stripe_payment_intent_id': billCode},
+      {'payment_status': status, 'transaction_id': transactionId},
       where: 'id = ?',
       whereArgs: [bookingId],
     );
@@ -382,41 +362,22 @@ class DatabaseHelper {
     return await db.delete('bookings', where: 'id = ?', whereArgs: [id]);
   }
 
-  // ─── PROFILE STATS ────────────────────────────────────────────
   Future<int> getItemCountByOwner(int ownerId) async {
     final db = await database;
     final result = await db.rawQuery(
       'SELECT COUNT(*) AS c FROM items WHERE owner_id = ?', [ownerId]);
-    return (result.first['c'] as int?) ?? 0;
+    return (result.first['c'] as num?)?.toInt() ?? 0;
   }
 
   Future<int> getRentalCountByRenter(int renterId) async {
     final db = await database;
+    // count all bookings, not just paid ones
     final result = await db.rawQuery(
-      'SELECT COUNT(*) AS c FROM bookings WHERE renter_id = ? AND payment_status = "paid"',
+      'SELECT COUNT(*) AS c FROM bookings WHERE renter_id = ?',
       [renterId]);
-    return (result.first['c'] as int?) ?? 0;
+    return (result.first['c'] as num?)?.toInt() ?? 0;
   }
 
-  /// Returns response rate as a display string, e.g. "75%" or "—" if no conversations.
-  Future<String> getResponseRate(int userId) async {
-    final db = await database;
-    final totalResult = await db.rawQuery(
-      'SELECT COUNT(*) AS c FROM conversations WHERE owner_id = ?', [userId]);
-    final total = (totalResult.first['c'] as int?) ?? 0;
-    if (total == 0) return '—';
-
-    final repliedResult = await db.rawQuery('''
-      SELECT COUNT(DISTINCT c.id) AS c
-      FROM conversations c
-      INNER JOIN messages m ON m.conversation_id = c.id AND m.sender_id = c.owner_id
-      WHERE c.owner_id = ?
-    ''', [userId]);
-    final replied = (repliedResult.first['c'] as int?) ?? 0;
-    return '${(replied / total * 100).round()}%';
-  }
-
-  // ─── CONVERSATIONS ────────────────────────────────────────────
   Future<ConversationModel> getOrCreateConversation({
     required int itemId,
     required int ownerId,
@@ -461,7 +422,6 @@ class DatabaseHelper {
     return maps.map((m) => ConversationModel.fromMap(m)).toList();
   }
 
-  // ─── MESSAGES ─────────────────────────────────────────────────
   Future<int> insertMessage(MessageModel message) async {
     final db = await database;
     final id = await db.insert('messages', message.toMap());
@@ -486,5 +446,55 @@ class DatabaseHelper {
       orderBy: 'created_at ASC',
     );
     return maps.map((m) => MessageModel.fromMap(m)).toList();
+  }
+}
+
+class SessionService {
+  static const _keyUserId = 'user_id';
+  static const _keyUserRole = 'user_role';
+  static const _keyUserName = 'user_name';
+  static const _keyUserEmail = 'user_email';
+
+  static Future<void> saveSession({
+    required int userId,
+    required String role,
+    required String name,
+    required String email,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyUserId, userId);
+    await prefs.setString(_keyUserRole, role);
+    await prefs.setString(_keyUserName, name);
+    await prefs.setString(_keyUserEmail, email);
+  }
+
+  static Future<int?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_keyUserId);
+  }
+
+  static Future<String?> getUserRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyUserRole);
+  }
+
+  static Future<String?> getUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyUserName);
+  }
+
+  static Future<String?> getUserEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyUserEmail);
+  }
+
+  static Future<bool> isLoggedIn() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.containsKey(_keyUserId);
+  }
+
+  static Future<void> clearSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
   }
 }
