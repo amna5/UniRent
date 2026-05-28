@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'database_helper.dart';
 import 'theme.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
 import 'admin_dashboard_screen.dart';
+import 'landing_screen.dart';
+import 'app_logo.dart';
+import 'notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseHelper.instance.database;
+  await NotificationService.init();
   runApp(const UniRentApp());
 }
 
@@ -25,7 +30,6 @@ class UniRentApp extends StatelessWidget {
   }
 }
 
-/// Checks for existing session and routes accordingly
 class _Splash extends StatefulWidget {
   const _Splash();
 
@@ -41,7 +45,16 @@ class _SplashState extends State<_Splash> {
   }
 
   Future<void> _checkSession() async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 1200));
+
+    // show landing only on first launch
+    final prefs = await SharedPreferences.getInstance();
+    final landingSeen = prefs.getBool('landing_seen') ?? false;
+    if (!landingSeen) {
+      _go(const LandingScreen());
+      return;
+    }
+
     final loggedIn = await SessionService.isLoggedIn();
     if (!loggedIn) {
       _go(const LoginScreen());
@@ -60,25 +73,27 @@ class _SplashState extends State<_Splash> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: AppTheme.primary,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.home_rounded, color: Colors.white, size: 64),
-            SizedBox(height: 16),
-            Text(
-              'UniRent',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppTheme.primary, Color(0xFF3D1C08)],
+          ),
+        ),
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              UniRentLogo(iconSize: 88, showText: true, onDark: true),
+              SizedBox(height: 48),
+              CircularProgressIndicator(
+                color: Colors.white38,
+                strokeWidth: 2,
               ),
-            ),
-            SizedBox(height: 8),
-            CircularProgressIndicator(color: Colors.white60, strokeWidth: 2),
-          ],
+            ],
+          ),
         ),
       ),
     );

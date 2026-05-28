@@ -147,6 +147,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                               builder: (_) => ChatScreen(
                                 conversationId: conv.id!,
                                 currentUserId: _currentUserId!,
+                                otherUserId: conv.ownerId == _currentUserId ? conv.renterId : conv.ownerId,
                                 otherUserName: conv.otherUserName ?? 'Unknown',
                                 itemTitle: conv.itemTitle ?? '',
                               ),
@@ -165,6 +166,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 class ChatScreen extends StatefulWidget {
   final int conversationId;
   final int currentUserId;
+  final int otherUserId;
   final String otherUserName;
   final String itemTitle;
 
@@ -172,6 +174,7 @@ class ChatScreen extends StatefulWidget {
     super.key,
     required this.conversationId,
     required this.currentUserId,
+    required this.otherUserId,
     required this.otherUserName,
     required this.itemTitle,
   });

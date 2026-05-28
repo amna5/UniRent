@@ -79,7 +79,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     }
   }
 
-  // ── Delete item ─────────────────────────────────────────────
   Future<void> _deleteItem(ItemModel item) async {
     final confirm = await _confirmDelete('item', item.title);
     if (confirm) {
@@ -95,7 +94,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     }
   }
 
-  // ── Edit user ────────────────────────────────────────────────
   Future<void> _editUser(UserModel user) async {
     final nameCtrl = TextEditingController(text: user.name);
     final uniCtrl = TextEditingController(text: user.university);
@@ -174,8 +172,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
         password: user.password,
         university: uni,
         role: selectedRole,
-        rating: user.rating,
-        reviewCount: user.reviewCount,
         itemsListed: user.itemsListed,
         rentalCount: user.rentalCount,
         memberSince: user.memberSince,
@@ -190,7 +186,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     }
   }
 
-  // ── Delete user ─────────────────────────────────────────────
   Future<void> _deleteUser(UserModel user) async {
     final confirm = await _confirmDelete('user', user.name);
     if (confirm) {
@@ -206,7 +201,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     }
   }
 
-  // ── Delete booking ───────────────────────────────────────────
   Future<void> _deleteBooking(BookingModel booking) async {
     final confirm = await _confirmDelete('booking', '#${booking.id}');
     if (confirm) {
@@ -222,7 +216,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     }
   }
 
-  // ── Update item availability ─────────────────────────────────
   Future<void> _toggleItemAvailability(ItemModel item) async {
     final updated = ItemModel(
       id: item.id,
@@ -240,7 +233,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     _loadData();
   }
 
-  // ── Update booking status ────────────────────────────────────
   Future<void> _updateBookingStatus(
     BookingModel booking,
     String newStatus,
@@ -370,7 +362,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   }
 }
 
-// ─── Bookings Tab ────────────────────────────────────────────────────────────
 class _BookingsTab extends StatelessWidget {
   final List<BookingModel> bookings;
   final NumberFormat currency;
@@ -430,7 +421,6 @@ class _BookingsTab extends StatelessWidget {
               const SizedBox(height: 10),
               Row(
                 children: [
-                  // Update status dropdown
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       initialValue: b.bookingStatus,
@@ -506,7 +496,6 @@ class _BookingsTab extends StatelessWidget {
   );
 }
 
-// ─── Items Tab ───────────────────────────────────────────────────────────────
 class _ItemsTab extends StatelessWidget {
   final List<ItemModel> items;
   final NumberFormat currency;
@@ -619,7 +608,6 @@ class _ItemsTab extends StatelessWidget {
   }
 }
 
-// ─── Users Tab ───────────────────────────────────────────────────────────────
 class _UsersTab extends StatelessWidget {
   final List<UserModel> users;
   final List<ItemModel> items;
@@ -687,7 +675,7 @@ class _UsersTab extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${user.university} · ⭐ ${user.rating}',
+                      user.university,
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppTheme.textSecondary,
@@ -721,7 +709,6 @@ class _UsersTab extends StatelessWidget {
   }
 }
 
-// ─── Shared status badge widget ───────────────────────────────────────────────
 class _StatusBadge extends StatelessWidget {
   final String label;
   final Color color;

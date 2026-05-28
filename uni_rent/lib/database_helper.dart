@@ -34,7 +34,6 @@ class DatabaseHelper {
   }
 
   Future _createDB(Database db, int version) async {
-    // Users table — role: 'user' or 'admin'
     await db.execute('''
       CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,8 +42,6 @@ class DatabaseHelper {
         password TEXT NOT NULL,
         university TEXT NOT NULL,
         role TEXT NOT NULL DEFAULT 'user',
-        rating REAL DEFAULT 0.0,
-        review_count INTEGER DEFAULT 0,
         items_listed INTEGER DEFAULT 0,
         rental_count INTEGER DEFAULT 0,
         member_since TEXT NOT NULL,
@@ -52,7 +49,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Items table
     await db.execute('''
       CREATE TABLE items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,7 +65,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Bookings table
     await db.execute('''
       CREATE TABLE bookings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -91,37 +86,30 @@ class DatabaseHelper {
       )
     ''');
 
-    // Seed admin account
     await db.insert('users', {
       'name': 'Admin UniRent',
       'email': 'admin@unirent.my',
       'password': 'admin123',
       'university': 'UniRent HQ',
       'role': 'admin',
-      'rating': 5.0,
-      'review_count': 0,
       'items_listed': 0,
       'rental_count': 0,
       'member_since': DateTime.now().toIso8601String(),
       'is_active': 1,
     });
 
-    // Seed sample user
     await db.insert('users', {
       'name': 'Ahmad Faris',
       'email': 'ahmad.faris@unikl.edu.my',
       'password': 'password123',
       'university': 'UniKL MIIT',
       'role': 'user',
-      'rating': 4.8,
-      'review_count': 24,
       'items_listed': 12,
       'rental_count': 24,
       'member_since': DateTime(2025, 1, 1).toIso8601String(),
       'is_active': 1,
     });
 
-    // Seed sample items
     final items = [
       {
         'owner_id': 2,
@@ -177,7 +165,6 @@ class DatabaseHelper {
       await db.insert('items', item);
     }
 
-    // Conversations table
     await db.execute('''
       CREATE TABLE conversations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -193,7 +180,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Messages table
     await db.execute('''
       CREATE TABLE messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -208,7 +194,6 @@ class DatabaseHelper {
     ''');
   }
 
-  // ─── USER CRUD ────────────────────────────────────────────────
   Future<int> insertUser(UserModel user) async {
     final db = await database;
     return await db.insert('users', user.toMap());
@@ -253,7 +238,6 @@ class DatabaseHelper {
     return await db.delete('users', where: 'id = ?', whereArgs: [id]);
   }
 
-  // ─── ITEM CRUD ────────────────────────────────────────────────
   Future<int> insertItem(ItemModel item) async {
     final db = await database;
     return await db.insert('items', item.toMap());
@@ -317,7 +301,6 @@ class DatabaseHelper {
     return await db.delete('items', where: 'id = ?', whereArgs: [id]);
   }
 
-  // ─── BOOKING CRUD ─────────────────────────────────────────────
   Future<int> insertBooking(BookingModel booking) async {
     final db = await database;
     return await db.insert('bookings', booking.toMap());
@@ -379,7 +362,6 @@ class DatabaseHelper {
     return await db.delete('bookings', where: 'id = ?', whereArgs: [id]);
   }
 
-  // ─── PROFILE STATS ────────────────────────────────────────────
   Future<int> getItemCountByOwner(int ownerId) async {
     final db = await database;
     final result = await db.rawQuery(
@@ -389,31 +371,13 @@ class DatabaseHelper {
 
   Future<int> getRentalCountByRenter(int renterId) async {
     final db = await database;
+    // count all bookings, not just paid ones
     final result = await db.rawQuery(
-      'SELECT COUNT(*) AS c FROM bookings WHERE renter_id = ? AND payment_status = "paid"',
+      'SELECT COUNT(*) AS c FROM bookings WHERE renter_id = ?',
       [renterId]);
     return (result.first['c'] as num?)?.toInt() ?? 0;
   }
 
-  /// Returns response rate as a display string, e.g. "75%" or "—" if no conversations.
-  Future<String> getResponseRate(int userId) async {
-    final db = await database;
-    final totalResult = await db.rawQuery(
-      'SELECT COUNT(*) AS c FROM conversations WHERE owner_id = ?', [userId]);
-    final total = (totalResult.first['c'] as num?)?.toInt() ?? 0;
-    if (total == 0) return '—';
-
-    final repliedResult = await db.rawQuery('''
-      SELECT COUNT(DISTINCT c.id) AS c
-      FROM conversations c
-      INNER JOIN messages m ON m.conversation_id = c.id AND m.sender_id = c.owner_id
-      WHERE c.owner_id = ?
-    ''', [userId]);
-    final replied = (repliedResult.first['c'] as num?)?.toInt() ?? 0;
-    return '${(replied / total * 100).round()}%';
-  }
-
-  // ─── CONVERSATIONS ────────────────────────────────────────────
   Future<ConversationModel> getOrCreateConversation({
     required int itemId,
     required int ownerId,
@@ -458,7 +422,6 @@ class DatabaseHelper {
     return maps.map((m) => ConversationModel.fromMap(m)).toList();
   }
 
-  // ─── MESSAGES ─────────────────────────────────────────────────
   Future<int> insertMessage(MessageModel message) async {
     final db = await database;
     final id = await db.insert('messages', message.toMap());

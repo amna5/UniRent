@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'database_helper.dart';
 import 'models.dart';
 import 'theme.dart';
@@ -15,7 +16,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   UserModel? _user;
   int _itemsListed = 0;
   int _rentalCount = 0;
-  String _responseRate = '—';
 
   @override
   void initState() {
@@ -39,7 +39,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         DatabaseHelper.instance.getUserById(id),
         DatabaseHelper.instance.getItemCountByOwner(id),
         DatabaseHelper.instance.getRentalCountByRenter(id),
-        DatabaseHelper.instance.getResponseRate(id),
       ]);
       final user = results[0] as UserModel?;
       if (user == null) {
@@ -57,7 +56,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _user = user;
         _itemsListed = results[1] as int;
         _rentalCount = results[2] as int;
-        _responseRate = results[3] as String;
       });
     } catch (e, stack) {
       debugPrint("Error loading profile: $e");
@@ -127,8 +125,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         password: _user!.password,
         university: uni,
         role: _user!.role,
-        rating: _user!.rating,
-        reviewCount: _user!.reviewCount,
         itemsListed: _user!.itemsListed,
         rentalCount: _user!.rentalCount,
         memberSince: _user!.memberSince,
@@ -144,6 +140,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _showNotificationSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool bookingAlerts = prefs.getBool('notif_bookings') ?? true;
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('Notification Settings'),
+          content: SwitchListTile(
+            value: bookingAlerts,
+            activeThumbColor: AppTheme.primary,
+            title: const Text('Booking Alerts',
+                style: TextStyle(fontSize: 14)),
+            subtitle: const Text('Confirmations & status updates',
+                style: TextStyle(fontSize: 12)),
+            onChanged: (v) async {
+              setLocal(() => bookingAlerts = v);
+              await prefs.setBool('notif_bookings', v);
+            },
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Done'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _logout() async {
@@ -191,7 +224,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Header
               Container(
                 color: AppTheme.primary,
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
@@ -222,23 +254,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.star_rounded,
-                                color: Colors.amber,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${_user!.rating} (${_user!.reviewCount} reviews)',
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
                         ],
                       ),
                     ),
@@ -246,7 +261,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
 
-              // Stats row
               Container(
                 color: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -255,15 +269,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _stat('$_itemsListed', 'Items Listed'),
                     _divider(),
                     _stat('$_rentalCount', 'Rentals'),
-                    _divider(),
-                    _stat(_responseRate, 'Response Rate'),
                   ],
                 ),
               ),
 
               const SizedBox(height: 8),
 
-              // Account info
               _section('Account Information', [
                 _infoTile(Icons.email_outlined, 'Email', _user!.email),
                 _infoTile(
@@ -275,43 +286,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               const SizedBox(height: 8),
 
-              // Achievements
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Achievements',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 2.5,
-                      children: const [
-                        _AchievementBadge(icon: '🏆', label: 'Trusted Lender'),
-                        _AchievementBadge(icon: '⭐', label: '5-Star Rating'),
-                        _AchievementBadge(icon: '📦', label: 'Quick Responder'),
-                        _AchievementBadge(icon: '✅', label: 'Verified Student'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Settings
               _section('Settings', [
                 _settingsTile(
                   Icons.list_alt_rounded,
@@ -331,20 +305,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onTap: _editProfile,
                 ),
                 _settingsTile(
-                  Icons.payment_outlined,
-                  'Payment Methods',
-                  onTap: () {},
-                ),
-                _settingsTile(
                   Icons.notifications_outlined,
                   'Notification Settings',
-                  onTap: () {},
+                  onTap: _showNotificationSettings,
                 ),
               ]),
 
               const SizedBox(height: 8),
 
-              // Logout
               Container(
                 color: Colors.white,
                 child: ListTile(
@@ -450,34 +418,3 @@ class _ProfileScreenState extends State<ProfileScreen> {
   );
 }
 
-class _AchievementBadge extends StatelessWidget {
-  final String icon;
-  final String label;
-  const _AchievementBadge({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    decoration: BoxDecoration(
-      color: AppTheme.cardBg,
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: AppTheme.divider),
-    ),
-    child: Row(
-      children: [
-        Text(icon, style: const TextStyle(fontSize: 18)),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}

@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Brand colours from UniRent prototype
   static const Color primary = Color(0xFF5C2E0E);      // dark brown
   static const Color primaryLight = Color(0xFF8B4513);
   static const Color accent = Color(0xFFE07B39);        // orange accent

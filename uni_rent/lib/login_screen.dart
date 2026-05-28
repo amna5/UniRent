@@ -58,7 +58,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Save session
     await SessionService.saveSession(
       userId: user.id!,
       role: user.role,
@@ -68,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
-    // Route based on role
+    // send admin to dashboard, regular user to home
     if (user.isAdmin) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
@@ -92,7 +91,6 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const SizedBox(height: 40),
 
-              // Logo
               Center(
                 child: Container(
                   width: 80,
@@ -127,7 +125,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 48),
 
-              // Email field
               const Text(
                 'University Email',
                 style: TextStyle(
@@ -146,7 +143,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Password field
               const Text(
                 'Password',
                 style: TextStyle(
@@ -176,7 +172,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 8),
 
-              // Error message
               if (_errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 4, bottom: 4),
@@ -188,7 +183,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 24),
 
-              // Login button
               _isLoading
                   ? const Center(
                       child: CircularProgressIndicator(color: AppTheme.primary),
@@ -200,7 +194,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 20),
 
-              // Register link
               Center(
                 child: GestureDetector(
                   onTap: () => Navigator.push(
@@ -219,7 +212,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Verified badge
               const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -275,7 +267,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Account created! Please login.'),
             backgroundColor: Colors.green));
-      Navigator.pop(context);
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
     } catch (e) {
       setState(() { _loading = false; _error = 'Email already registered.'; });
     }

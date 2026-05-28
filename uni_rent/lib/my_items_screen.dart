@@ -135,6 +135,7 @@ class _MyItemsScreenState extends State<MyItemsScreen>
         builder: (_) => ChatScreen(
           conversationId: conv.id!,
           currentUserId: _userId!,
+          otherUserId: conv.renterId,
           otherUserName: owner?.name ?? 'Owner',
           itemTitle: item.title,
         ),

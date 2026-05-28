@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'database_helper.dart';
 import 'models.dart';
 import 'theme.dart';
 import 'chat_screens.dart';
+import 'notification_service.dart';
 
 class ItemDetailScreen extends StatefulWidget {
   final ItemModel item;
@@ -50,6 +52,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         builder: (_) => ChatScreen(
           conversationId: conv.id!,
           currentUserId: _currentUserId!,
+          otherUserId: conv.ownerId,
           otherUserName: owner?.name ?? 'Owner',
           itemTitle: widget.item.title,
         ),
@@ -268,6 +271,16 @@ class _BookingScreenState extends State<BookingScreen> {
         createdAt: DateTime.now().toIso8601String(),
       ),
     );
+
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('notif_bookings') ?? true) {
+      final fmt = DateFormat('dd MMM');
+      await NotificationService.bookingConfirmed(
+        itemTitle: widget.item.title,
+        period: '${fmt.format(_startDate!)} – ${fmt.format(_endDate!)}',
+        userId: userId,
+      );
+    }
 
     setState(() => _isProcessing = false);
     if (!mounted) return;

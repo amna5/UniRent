@@ -7,6 +7,8 @@ import 'add_item_screen.dart';
 import 'my_items_screen.dart';
 import 'chat_screens.dart';
 import 'profile_screen.dart';
+import 'app_logo.dart';
+import 'notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,7 +19,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-  int _profileKey = 0;
+  int _profileKey = 0; // bumping this forces profile to re-fetch on tab switch
   String _selectedCategory = 'All';
   String _searchQuery = '';
   List<ItemModel> _items = [];
@@ -36,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadItems();
+    NotificationService.requestPermission();
   }
 
   Future<void> _loadItems() async {
@@ -54,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadItems();
   }
 
+  // filter by title, category or location
   List<ItemModel> get _filteredItems {
     if (_searchQuery.isEmpty) return _items;
     final q = _searchQuery.toLowerCase();
@@ -88,8 +92,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (i) {
           setState(() {
             _currentIndex = i;
-            if (i == 0) _loadItems();
-            if (i == 4) _profileKey++;
+            if (i == 0) _loadItems(); // refresh in case a new item was added
+            if (i == 4) _profileKey++; // force profile rebuild
           });
         },
         items: const [
@@ -147,21 +151,14 @@ class _HomeTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Container(
             color: AppTheme.primary,
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'UniRent',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                const UniRentAppBarTitle(),
+                const SizedBox(height: 2),
                 const Text(
                   'Find what you need, nearby',
                   style: TextStyle(color: Colors.white70, fontSize: 13),
@@ -186,7 +183,6 @@ class _HomeTab extends StatelessWidget {
             ),
           ),
 
-          // Categories
           SizedBox(
             height: 44,
             child: ListView.separated(
@@ -225,7 +221,6 @@ class _HomeTab extends StatelessWidget {
             ),
           ),
 
-          // Item grid
           Expanded(
             child: loading
                 ? const Center(
@@ -272,7 +267,6 @@ class _ItemCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image — asset, file, or placeholder
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(

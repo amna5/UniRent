@@ -22,14 +22,12 @@ class _AddItemScreenState extends State<AddItemScreen> {
   String _period = 'Per Day';
   bool _loading = false;
 
-  // ── Image state ────────────────────────────────────────────────
-  File? _pickedImage; // preview
-  String? _savedImagePath; // path stored in SQLite
+  File? _pickedImage;
+  String? _savedImagePath;
 
   final _picker = ImagePicker();
   final _categories = ['Electronics', 'Clothing', 'Tools', 'Books', 'Other'];
 
-  // ── Pick image from camera or gallery ─────────────────────────
   Future<void> _pickImage(ImageSource source) async {
     final picked = await _picker.pickImage(
       source: source,
@@ -38,8 +36,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
     );
     if (picked == null) return;
 
-    // Copy image to app's permanent documents directory so it
-    // persists even if the cache is cleared
+    // save to documents so it doesn't get wiped with the cache
     final appDir = await getApplicationDocumentsDirectory();
     final fileName =
         'item_${DateTime.now().millisecondsSinceEpoch}${p.extension(picked.path)}';
@@ -51,7 +48,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
     });
   }
 
-  // ── Show bottom sheet to choose camera or gallery ──────────────
   void _showImageSourceSheet() {
     showModalBottomSheet(
       context: context,
@@ -131,7 +127,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
     );
   }
 
-  // ── Save item to SQLite ────────────────────────────────────────
   Future<void> _listItem() async {
     if (_title.text.isEmpty ||
         _description.text.isEmpty ||
@@ -155,7 +150,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
         description: _description.text.trim(),
         pricePerDay: double.tryParse(_price.text) ?? 0,
         location: _location.text.trim(),
-        imagePath: _savedImagePath, // ← saved file path goes into DB
+        imagePath: _savedImagePath,
         createdAt: DateTime.now().toIso8601String(),
       ),
     );
@@ -167,7 +162,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
         backgroundColor: Colors.green,
       ),
     );
-    // Reset form
     _title.clear();
     _description.clear();
     _price.clear();
@@ -187,7 +181,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Image picker area ──────────────────────────────
             GestureDetector(
               onTap: _showImageSourceSheet,
               child: Container(
@@ -205,12 +198,10 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 ),
                 clipBehavior: Clip.hardEdge,
                 child: _pickedImage != null
-                    // Show the picked image as preview
                     ? Stack(
                         fit: StackFit.expand,
                         children: [
                           Image.file(_pickedImage!, fit: BoxFit.cover),
-                          // Edit overlay
                           Positioned(
                             bottom: 8,
                             right: 8,
@@ -245,7 +236,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
                           ),
                         ],
                       )
-                    // Show upload placeholder
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
