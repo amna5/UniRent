@@ -84,8 +84,7 @@ class LandingScreen extends StatelessWidget {
                 _Feature(
                   icon: Icons.notifications_active_rounded,
                   title: 'Stay Notified',
-                  subtitle:
-                      'Real-time alerts for bookings and messages via push API',
+                  subtitle: 'Real-time alerts for bookings via push API',
                 ),
 
                 const Spacer(flex: 3),
@@ -102,10 +101,7 @@ class LandingScreen extends StatelessWidget {
                   ),
                   child: const Text(
                     'Get Started',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ),
 
@@ -121,10 +117,7 @@ class LandingScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    'Sign In',
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  child: const Text('Sign In', style: TextStyle(fontSize: 16)),
                 ),
 
                 const SizedBox(height: 32),
